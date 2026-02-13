@@ -2806,6 +2806,71 @@ server.tool(
   }
 );
 
+// Figma Variables: Bind a variable to a node property
+server.tool(
+  "set_node_variable",
+  "Bind a variable to a node property (e.g., width, height, padding, corner radius, opacity, etc.). Use 'list_variables' to find variable IDs and 'get_node_variables' to see existing bindings.",
+  {
+    nodeId: z.string().describe("The ID of the node to bind the variable to"),
+    property: z.string().describe("The node property to bind (e.g., 'width', 'height', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'opacity', 'visible', 'topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius', 'fontSize', 'itemSpacing', 'counterAxisSpacing', 'strokeWeight', 'minWidth', 'maxWidth', 'minHeight', 'maxHeight', etc.)"),
+    variableId: z.string().describe("The ID of the variable to bind"),
+  },
+  async ({ nodeId, property, variableId }: { nodeId: string; property: string; variableId: string }): Promise<any> => {
+    try {
+      const result = await sendCommandToFigma("set_node_variable", { nodeId, property, variableId });
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Variable bound to node property: ${JSON.stringify(result, null, 2)}`
+          }
+        ]
+      };
+    } catch (error: any) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Error binding variable to node property: ${error instanceof Error ? error.message : String(error)}`
+          }
+        ]
+      };
+    }
+  }
+);
+
+// Figma Variables: Unbind a variable from a node property
+server.tool(
+  "unbind_node_variable",
+  "Remove a variable binding from a node property. Use 'get_node_variables' to see existing bindings before unbinding.",
+  {
+    nodeId: z.string().describe("The ID of the node to unbind the variable from"),
+    property: z.string().describe("The node property to unbind (e.g., 'width', 'height', 'paddingTop', 'opacity', 'topLeftRadius', etc.)"),
+  },
+  async ({ nodeId, property }: { nodeId: string; property: string }): Promise<any> => {
+    try {
+      const result = await sendCommandToFigma("unbind_node_variable", { nodeId, property });
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Variable unbound from node property: ${JSON.stringify(result, null, 2)}`
+          }
+        ]
+      };
+    } catch (error: any) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Error unbinding variable from node property: ${error instanceof Error ? error.message : String(error)}`
+          }
+        ]
+      };
+    }
+  }
+);
+
 // Figma Variables: Create a new variable
 server.tool(
   "create_variable",
@@ -2981,6 +3046,7 @@ type FigmaCommand =
   | "list_collections"
   | "get_node_variables"
   | "set_node_variable"
+  | "unbind_node_variable"
   | "get_node_paints"
   | "set_node_paints"
   | "create_variable"
@@ -3137,6 +3203,8 @@ type CommandParams = {
   list_variables: Record<string, never>;
   list_collections: Record<string, never>;
   get_node_variables: { nodeId: string };
+  set_node_variable: { nodeId: string; property: string; variableId: string };
+  unbind_node_variable: { nodeId: string; property: string };
   get_node_paints: { nodeId: string };
   set_node_paints: {
     nodeId: string;

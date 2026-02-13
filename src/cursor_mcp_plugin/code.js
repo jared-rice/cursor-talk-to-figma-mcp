@@ -237,6 +237,10 @@ async function handleCommand(command, params) {
       return await listVariables();
     case "get_node_variables":
       return await getNodeVariables(params);
+    case "set_node_variable":
+      return await setNodeVariable(params);
+    case "unbind_node_variable":
+      return await unbindNodeVariable(params);
     case "create_variable":
       return await createVariable(params);
     case "set_variable_value":
@@ -1434,7 +1438,51 @@ async function getNodeVariables(params) {
   return { nodeId, boundVariables: node.boundVariables };
 }
 
-async function listCollections(params) { 
+// Bind a variable to a node property (e.g., width, height, padding, opacity, etc.)
+async function setNodeVariable(params) {
+  const { nodeId, property, variableId } = params || {};
+  if (!nodeId) throw new Error("Missing nodeId parameter");
+  if (!property) throw new Error("Missing property parameter");
+  if (!variableId) throw new Error("Missing variableId parameter");
+
+  const node = await figma.getNodeByIdAsync(nodeId);
+  if (!node) throw new Error(`Node not found: ${nodeId}`);
+
+  const variable = await figma.variables.getVariableByIdAsync(variableId);
+  if (!variable) throw new Error(`Variable not found: ${variableId}`);
+
+  node.setBoundVariable(property, variable);
+
+  return {
+    nodeId: node.id,
+    name: node.name,
+    property,
+    variableId: variable.id,
+    variableName: variable.name,
+    boundVariables: node.boundVariables
+  };
+}
+
+// Unbind/remove a variable binding from a node property
+async function unbindNodeVariable(params) {
+  const { nodeId, property } = params || {};
+  if (!nodeId) throw new Error("Missing nodeId parameter");
+  if (!property) throw new Error("Missing property parameter");
+
+  const node = await figma.getNodeByIdAsync(nodeId);
+  if (!node) throw new Error(`Node not found: ${nodeId}`);
+
+  node.setBoundVariable(property, null);
+
+  return {
+    nodeId: node.id,
+    name: node.name,
+    property,
+    boundVariables: node.boundVariables
+  };
+}
+
+async function listCollections(params) {
   if (!figma.variables || !figma.variables.getLocalVariableCollectionsAsync) {
     throw new Error("Figma Variables API not available");
   }
